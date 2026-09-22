@@ -130,6 +130,36 @@ describe("tclk frames — wire codec", () => {
     })).toThrow(/presig\.s/);
   });
 
+  it("rejects pre-signature points and scalars the adaptor cannot use", () => {
+    const base = {
+      type: "lock" as const,
+      from: PAYER_DID,
+      contract: "0x" + "11".repeat(32),
+      rail: "flop-htlc",
+      ref: "escrow-42",
+    };
+    const validNonce = schnorrAdaptor.getPublicKey("0x" + "11".repeat(32))!;
+    const offCurveNonce =
+      "0x02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
+    const curveOrder =
+      "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141";
+
+    expect(() => encodeFrame({
+      ...base,
+      presig: { nonce: offCurveNonce, s: "0x01" },
+    })).toThrow(/presig\.nonce is not a valid secp256k1 point/);
+
+    expect(() => encodeFrame({
+      ...base,
+      presig: { nonce: validNonce, s: "0x00" },
+    })).toThrow(/presig\.s is not a scalar/);
+
+    expect(() => encodeFrame({
+      ...base,
+      presig: { nonce: validNonce, s: curveOrder },
+    })).toThrow(/presig\.s is not a scalar/);
+  });
+
   it("tryDecodeFrame skips foreign and hostile lines instead of throwing", () => {
     expect(tryDecodeFrame("hello from ~alice")).toBeNull();
     expect(tryDecodeFrame('tclk1 {"type":"offer"}')).toBeNull();
