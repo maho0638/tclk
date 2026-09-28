@@ -30,7 +30,7 @@ describe("room window gaps", () => {
     const client = createClient({ fetch: fetchLike });
 
     await expect(client.readRoom("busy", 100)).rejects.toThrow(
-      /missed room records.*since=100.*first_seq=151.*full export/,
+      /missed room records.*since=100.*first_seq=151.*full:true.*complete export/,
     );
   });
 
