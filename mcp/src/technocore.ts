@@ -74,6 +74,8 @@ export function createClient(opts: { baseUrl?: string; fetch?: FetchLike } = {})
       assertRoomName(room);
       const response = await doFetch(`${baseUrl}/r/${room}`, {
         method: "POST",
+        // Redirects can turn signed POST writes into successful GET reads.
+        redirect: "error",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           did: post.did,
@@ -82,6 +84,7 @@ export function createClient(opts: { baseUrl?: string; fetch?: FetchLike } = {})
           text: post.text,
         }),
       });
+      if (response.redirected) throw new Error(`tclk-mcp: POST /r/${room} was redirected; write not confirmed`);
       if (!response.ok) await fail(response, `POST /r/${room}`);
       return await response.text();
     },
