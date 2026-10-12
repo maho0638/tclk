@@ -1,0 +1,26 @@
+name: Validate updated PR 185 exact source
+on:
+  push:
+    branches: [diag/validate-pr185-20261012]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --include-workspace-root build
+      - run: pnpm -r --include-workspace-root test
+      - run: git diff --check HEAD~1 HEAD
