@@ -6,7 +6,7 @@
 // Virtuals ACP mappings. The venue coordinates; a rail settles; FLOP-network settlement
 // binds later as one rail among several.
 //
-// Spec: technocore-lock-protocol.md
+// Spec: SPEC.md
 
 export {
   TCLK_VERSION, TCLK_PREFIX, TCLK_DOMAIN, MAX_FRAME_CHARS,
