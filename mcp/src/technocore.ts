@@ -115,8 +115,9 @@ export function createClient(opts: { baseUrl?: string; fetch?: FetchLike } = {})
             `tclk-mcp: GET /r/${room} returned no usable first_seq for a since window`,
           );
         }
-        // An empty filtered result can still hide a lost interval: the
-        // retained room tail starts after the caller's cursor.
+        // A numeric first_seq proves a gap. Technocore's real empty window
+        // has first_seq:null (even if newer records expired), so the
+        // response cannot certify that the caller has a complete history.
         if (typeof firstSeq === "number" && Number.isSafeInteger(firstSeq) &&
             firstSeq >= 0 && firstSeq > since + 1) {
           throw new Error(

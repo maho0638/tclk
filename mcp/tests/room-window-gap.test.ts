@@ -24,7 +24,7 @@ describe("room window gaps", () => {
         count: 50,
         first_seq: 151,
         last_seq: 200,
-        messages: [message(151), message(200)],
+        messages: Array.from({ length: 50 }, (_, i) => message(151 + i)),
       },
     }]);
     const client = createClient({ fetch: fetchLike });
@@ -34,36 +34,36 @@ describe("room window gaps", () => {
     );
   });
 
-  it("rejects an empty filtered window when first_seq proves a gap", async () => {
-    const { fetchLike } = fakeFetch([{
-      body: "",
-      json: {
-        room: "busy",
-        count: 50,
-        first_seq: 151,
-        last_seq: 200,
-        messages: [],
-      },
-    }]);
-    const client = createClient({ fetch: fetchLike });
-
-    await expect(client.readRoom("busy", 100)).rejects.toThrow(
-      /missed room records.*since=100.*first_seq=151.*full:true.*complete export/,
-    );
-  });
-
-  it("accepts an empty filtered window without evidence of a gap", async () => {
+  it("treats a server-shaped empty window as unknown, not proof of continuity", async () => {
+    // Technocore read_messages returns count=0, first_seq=null and
+    // last_seq=min(since, head_seq) when every newer on-disk record expired.
+    // The same envelope can mean there were simply no newer messages.
+    // Without an advertised retained floor/head we cannot distinguish them.
     const view = {
-      room: "quiet",
-      count: 100,
-      first_seq: 1,
+      room: "busy",
+      count: 0,
+      first_seq: null,
       last_seq: 100,
       messages: [],
     };
     const { fetchLike } = fakeFetch([{ body: "", json: view }]);
     const client = createClient({ fetch: fetchLike });
 
-    await expect(client.readRoom("quiet", 100)).resolves.toEqual(view);
+    await expect(client.readRoom("busy", 100)).resolves.toEqual(view);
+  });
+
+  it("keeps a genuinely empty room readable with the same venue shape", async () => {
+    const view = {
+      room: "quiet",
+      count: 0,
+      first_seq: null,
+      last_seq: 0,
+      messages: [],
+    };
+    const { fetchLike } = fakeFetch([{ body: "", json: view }]);
+    const client = createClient({ fetch: fetchLike });
+
+    await expect(client.readRoom("quiet", 0)).resolves.toEqual(view);
   });
 
   it("keeps a contiguous since window readable", async () => {
