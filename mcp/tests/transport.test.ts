@@ -34,6 +34,20 @@ describe("tclk_post_frame — tier 3, no identity", () => {
     expect(result.hint).toContain("TECHNOCORE_SIGNING_KEY");
   });
 
+  it("refuses invalid room names before issuing a signing challenge", async () => {
+    const { calls, fetchLike } = fakeFetch([]);
+    const h = createHandlers({ env: {}, fetch: fetchLike });
+    const line = offerLine();
+
+    // A no-key server must not offer a canonical signature challenge for a room
+    // the signed transport itself would refuse. The pipe case is especially
+    // misleading: it also breaks the room|nonce|text canonical grammar.
+    for (const room of ["Lobby!", "lobby|7|injected", "a".repeat(49)]) {
+      await expect(h.tclk_post_frame({ room, line })).rejects.toThrow(/bad room name/);
+    }
+    expect(calls).toHaveLength(0);
+  });
+
   it("refuses a partially supplied signature triple, and a line that is not a frame", async () => {
     const h = createHandlers({ env: {} });
     await expect(h.tclk_post_frame({ room: ROOM, line: offerLine(), did: signer.did })).rejects.toThrow(
